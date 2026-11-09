@@ -1,0 +1,10 @@
+vuer==0.0.60
+numpy==1.26.4
+opencv-python==4.11.0.86
+aiohttp==3.10.5
+aiohttp-cors==0.8.1
+params-proto==2.13.2
+websockets==17.1
+Pillow==10.2.0
+msgpack==1.2.2
+PyYAML==6.0.1

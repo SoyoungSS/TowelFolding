@@ -1,0 +1,39 @@
+# 遥操作位姿映射；夹爪端点见 grippers.yaml，电机位控 PD 见 controllerConfig.yaml。
+# ============================================================
+# 手臂位姿增量的基准坐标系
+# ============================================================
+# reference_frame 决定 /vr/left_arm_delta、/vr/right_arm_delta 的位置增量
+# 在哪个坐标系下计算：
+#   - head : 以头部为基准 —— 抵消头部/身体平移和水平转向，仅手柄相对头部的移动生效
+#            （安全默认；身体走动/转身不会带动机械臂）
+#   - room : 以房间（世界）坐标系为基准 —— 叠加头部/身体平移增量，
+#            机械臂在房间内做绝对运动（身体走动会带动机械臂同方向平移）
+# 说明：姿态增量始终先去除头显旋转，再按启动时的朝向映射到机器人固定轴；
+#       因而头部转向不会改变手柄 yaw / pitch / roll 对应的机械臂姿态轴。
+reference_frame: head
+
+# 手臂增量缩放（1.0 = Pico 移动/旋转多少，机械臂目标跟随多少）
+position_scale: 1.0
+orientation_scale: 2.0
+# Right B toggles between these two VR response profiles.
+fast_position_scale: 1.0
+fast_orientation_scale: 0.8
+fast_position_speed_mps: 1.2
+fast_orientation_speed_radps: 6.0
+fine_position_scale: 0.6
+fine_orientation_scale: 1.0
+fine_position_speed_mps: 1.2
+fine_orientation_speed_radps: 6.0
+# Robot-frame per-axis calibration: [x=front, y=left, z=up].
+# Set a sign to -1 only if that physical axis is reversed on this setup.
+position_axis_scale: [1.0, 1.0, 1.0]
+position_axis_sign: [1.0, 1.0, 1.0]
+# 水平面标定：绕机器人竖直轴（z=上）旋转下发平移量，补偿“手的前/左”与
+# 机器人“前/左”之间的固定角度偏差（表现为前后/左右平移出来是斜线）。
+# 正值 = 从上方看逆时针（绕 +z），单位：度。校直后把值写回这里即可。
+translation_yaw_offset_deg: 0.0
+# Increment streams are direct by default (1.0 disables filtering).  Since
+# the lower controller integrates every sample, filtering increments causes
+# residual motion and a wrong-way lag when the hand reverses direction.
+position_filter_alpha: 1.0
+orientation_filter_alpha: 1.0

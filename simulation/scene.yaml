@@ -1,0 +1,60 @@
+# SI units: meters, kilograms, seconds, radians.
+robot:
+  left: [-0.65, 0.10, 0.0, -1.30, 0.0, -1.55, 0.0]
+  right: [0.65, -0.10, 0.0, 1.30, 0.0, 1.55, 0.0]
+  # Normalized rotary jaw opening (0 closed, 1 at the URDF limit).
+  gripper_opening: 0.5
+  joint_speed: 0.45
+  finger_speed: 0.8  # rad/s
+table:
+  center: [0.50, 0.0]
+  size: [0.80, 1.00]
+  height: 0.55
+  thickness: 0.04
+  friction: 0.65
+towel:
+  center: [0.285, 0.0]
+  size: [0.30, 0.30]
+  cells: [20, 20]
+  mass: 0.08
+  drop_height: 0.04
+  particle_radius: 0.002
+  stretch_stiffness: 500.0
+  area_stiffness: 500.0
+  damping: 0.05
+  bending_stiffness: 0.002
+  friction: 0.6
+fold:
+  approach_height: 0.09
+  lift_height: 0.11
+  fold_duration: 8.0
+  pair_tolerance: 0.025
+cameras:
+  resolution: [320, 240]
+  fps: 15
+  vertical_fov_deg: 65
+  # Mount positions, targets and up vectors are in the parent link frame.
+  head:
+    parent: arm_base_link
+    position: [0.14, 0.0, 0.20]
+    target: [0.33, 0.0, -0.45]
+    up: [0.0, 0.0, 1.0]
+  left_wrist:
+    parent: arm_l_link_gripper
+    position: [0.14, 0.0, 0.006]
+    target: [0.0, 0.002, -0.136]
+    up: [0.0, 1.0, 0.0]
+  right_wrist:
+    parent: arm_r_link_gripper
+    position: [0.14, 0.0, 0.006]
+    target: [0.0, -0.002, -0.136]
+    up: [0.0, -1.0, 0.0]
+vr:
+  mapping_config: teleop/VR_controller/config/gripper_pd.yaml
+  timeout: 0.25
+  max_target_lead: 0.04
+  lock_tool_twist: false
+simulation:
+  fps: 60
+  substeps: 10
+  iterations: 8
