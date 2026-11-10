@@ -73,3 +73,15 @@ outputs/collect/日期_时间_进程号/
 ```bash
 $HOME/miniforge3/envs/dexonomy-isaac/bin/python -m pip install pyarrow==19.0.1 --no-deps --target .runtime/collector_deps
 ```
+
+## 学习资料与教学实验
+
+所有教学脚本和Python代码已集中到 `learning/`，按课程顺序阅读 [学习回顾手册](learning/STUDY_GUIDE.md)。根目录保留实时仿真采集入口 `./run_collect.sh`。
+
+```bash
+# 在工程根目录运行；教学实验不控制机器人
+./learning/scripts/learn_data.sh
+./learning/scripts/learn_batch.sh
+```
+
+`learning/scripts/` 是13课的Shell入口，`learning/python/` 是教学实现与共享模块。旧的根目录 `learn_*.sh` 已移动，请使用新路径。教学图表、页面和模型仍写入采集目录旁的 `learning_*` 输出目录，依赖仍在 `.runtime/`。

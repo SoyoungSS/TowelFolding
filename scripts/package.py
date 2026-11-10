@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "MANIFEST.json"
-EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", ".git", "outputs", ".venv"}
+EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", ".git", "outputs", ".runtime", ".venv"}
 
 
 def files():
@@ -24,7 +24,7 @@ def files():
             continue
         if path.suffix in {".pem", ".key", ".pyc", ".pyo"} or path.name == "imgui.ini":
             continue
-        if relative.parts[0] in {"simulation", "dual_arm", "teleop", "scripts", "tests", "environments", "docs"} or path.name in {"README.md", "Makefile", "THIRD_PARTY_NOTICES.md", ".gitignore"}:
+        if relative.parts[0] in {"simulation", "dual_arm", "teleop", "scripts", "tests", "environments", "docs", "learning"} or path.name in {"README.md", "Makefile", "THIRD_PARTY_NOTICES.md", ".gitignore", "run_collect.sh"}:
             yield path
 
 
