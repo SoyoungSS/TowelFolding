@@ -24,6 +24,7 @@ from bridge_transport import send_message, receive_message
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--collect",action="store_true")
+    parser.add_argument("--recovery-plan", type=Path)
     parser.add_argument("--headless",action="store_true")
     parser.add_argument("--paused",action="store_true",help="Start with physics paused")
     parser.add_argument("--exit-on-done",action="store_true")
@@ -34,7 +35,10 @@ def main():
     parser.add_argument("--timeout",type=float,default=120.)
     parser.add_argument("--newton-python",type=Path,default=Path.home()/"miniforge3/envs/towel-newton/bin/python")
     parser.add_argument("--output",type=Path,default=None)
+    parser.add_argument("--towel-offset", nargs=2, type=float, default=(0., 0.))
     args = parser.parse_args()
+    if args.recovery_plan and (not args.collect or args.fps != 30 or args.reset_after):
+        parser.error("Recovery requires --collect --fps 30 with no automatic reset")
     if args.fps<=0 or 60 % args.fps or args.max_updates<0 or args.reset_after<0:
         parser.error("fps must divide 60; update counts must be non-negative")
     stamp = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y%m%d_%H%M%S")
@@ -50,8 +54,12 @@ def main():
     with TemporaryDirectory(prefix="towel-live-") as runtime, (output/"newton.log").open("w") as worker_log, (output/"frames.jsonl").open("w") as frames_log:
         try:
             path = Path(runtime)/"physics.sock"
-            worker = subprocess.Popen([str(args.newton_python),"-I","-u",str(ROOT/"scripts/isaac/live_newton_worker.py"),
-                "--socket",str(path),"--seed",str(args.seed)],stdout=worker_log,stderr=subprocess.STDOUT,cwd=ROOT)
+            command = [str(args.newton_python), "-I", "-u", str(ROOT/"scripts/isaac/live_newton_worker.py"),
+                       "--socket", str(path), "--seed", str(args.seed),
+                       "--towel-offset", *(f"{value:.12f}" for value in args.towel_offset)]
+            if args.recovery_plan:
+                command.extend(["--recovery-plan", str(args.recovery_plan.resolve())])
+            worker = subprocess.Popen(command,stdout=worker_log,stderr=subprocess.STDOUT,cwd=ROOT)
             deadline = time.monotonic()+args.timeout
             while not path.exists():
                 if worker.poll() is not None:
@@ -206,6 +214,8 @@ def main():
                         "max_link_pose_component_error":visual.max_pose_error,
                         "max_camera_position_error_m":visual.max_camera_error,
                         "ui":not args.headless,"worker_pid":worker.pid}
+                    if args.recovery_plan:
+                        result["recovery"] = response["recovery"]
                     if collector is not None:
                         collector.finish(state["phase"] == "done")
                     (output/"completed_episode.json").write_text(json.dumps(result,indent=2))

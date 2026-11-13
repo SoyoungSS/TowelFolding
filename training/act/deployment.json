@@ -1,0 +1,9 @@
+{
+  "checkpoint": "outputs/act_stage1/correction_refined_retry_20261112/checkpoint",
+  "checkpoint_sha256": "0c60029024bcc6e1e69720df3bfa2089d7fef4c3eab28099fb0e4c99c399d634",
+  "action_steps": 30,
+  "duration_s": 29,
+  "validation_report": "outputs/act_rollout/correction_refined_repeat3_20261112/report.json",
+  "validated_on": "2026-11-12",
+  "scope": "Nominal fixed-scene folding; no expert calls; original thresholds"
+}

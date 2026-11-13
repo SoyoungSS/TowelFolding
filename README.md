@@ -1,6 +1,8 @@
 # 双臂叠毛巾：实时仿真与数据采集
 
-当前只运行一种工况：固定位置的30×30 cm平铺毛巾，由双臂轨迹专家完成一次对折。Newton负责物理，Isaac Sim打开实时窗口并同步采集头部、左右腕三路RGB、实际关节状态和目标动作，输出LeRobot v3结构的数据。
+**2026-11-12：ACT 已在当前固定场景连续完成 4 次无专家折叠验收。** 平均边缘误差为 6.7–16.6 mm，最大误差为 6.9–36.5 mm，未放宽原有标准。直接运行 `./run_act_live.sh` 使用已验证权重；训练、结果及适用范围见 [本轮改进记录](training/act/IMPROVEMENT_20261112.md)。
+
+默认工况为固定位置的 30×30 cm 平铺毛巾，由双臂轨迹专家完成对折。批量采集可改变每轮毛巾的初始平移。Newton负责物理，Isaac Sim打开实时窗口并同步采集头部、左右腕三路RGB、实际关节状态和目标动作，输出LeRobot v3结构的数据。
 
 ## 运行
 
@@ -21,6 +23,23 @@ cd /home/shendongran/code/newton_towel_sim
 4. 等终端出现 `DATASET SAVED`，数据已保存，再关闭窗口或点击 `Exit both processes`。
 
 窗口实时反映仿真状态；渲染速度较慢时，仿真会等待相机，实际耗时可能长于任务的约27秒仿真时间。提前关闭窗口或折叠失败不会产生成功数据标记。
+
+## 批量采集、训练与仿真
+
+```bash
+cd /home/shendongran/code/newton_towel_sim
+./run_collect.sh --episodes 5 --offset-mm 3 --output outputs/collect/my_batch
+./run_act_stage1.sh --collection-batch outputs/collect/my_batch/batch.json \
+  --steps 2000 --output outputs/act_stage1/my_batch_model
+./run_act_live.sh --checkpoint outputs/act_stage1/my_batch_model/checkpoint \
+  --action-steps 30 --goal fold --duration 29
+```
+
+批量采集使用无窗口渲染。第一轮使用原始位置，后续每轮按种子在 X 和 Y 方向分别采样不超过指定范围的初始平移。每轮生成独立的 episode 目录，包含三路 RGB、16 维状态和 16 维动作。每轮完成后更新 `batch.json`，记录偏移、验收状态和日志位置。训练只读取清单中通过折叠验收并写出成功标记的数据。输出目录须是新的目录。
+
+若批量采集中断，保持原来的 `--episodes`、`--seed`、`--offset-mm` 和 `--output` 参数，再加 `--resume` 可继续。已记录完成的轮次会跳过，未完成目录会保留为 `interrupted_*` 并重新采集该轮。建议采集、训练和闭环评价依次运行，避免 Isaac 与训练进程争用主机内存。
+
+训练将各 episode 的样本一起采样，动作块在各自 episode 内构造，末尾不足 30 步的部分按原有掩码处理。归一化统计从纳入训练的完整示范合并计算。最后一条命令从标准毛巾位置启动实时窗口，查看输出的 `evaluation.json` 判断自主策略是否通过。2000 步是起始训练预算，效果由闭环测试决定。
 
 ## 数据在哪里
 
@@ -50,11 +69,11 @@ outputs/collect/日期_时间_进程号/
 
 关节单位为弧度；夹爪closed以仿真开度小于0.1转换为1，否则为0。字段和目录结构对齐参考数据 `/home/shendongran/code/FoldedTowelsDataset/fold-flat-towel`；视频使用MPEG-4编码，参考数据为AV1，不复制其删帧和时间压缩。
 
-实测已完成一次带实时窗口的完整采集：815条记录、30 Hz、约27.17秒仿真时间，三路视频均逐帧解码检查通过，最终平均对齐误差16.2 mm。验收数据位于 `outputs/collect_validation_02/dataset`。
+实测已完成一次带实时窗口的完整采集：815条记录、30 Hz、约27.17秒仿真时间，三路视频均逐帧解码检查通过，最终平均对齐误差16.2 mm。当前训练使用的成功数据位于 `outputs/collect/20261109_152842_33675/dataset`。
 
 ## 用于ACT的范围
 
-这一步生成视觉模仿学习所需的RGB、状态和动作数据。当前只打通固定初态的一条示范，不自动训练ACT；单条数据适合读取检查和小样本拟合，不足以证明泛化能力。LeRobot实际加载及训练兼容性仍需在训练环境中验证。
+这一步生成视觉模仿学习所需的RGB、状态和动作数据。当前采集的是固定初态的一条示范，适合读取检查和小样本拟合，不足以证明泛化能力。标准LeRobot加载与ACT短程训练已通过第一阶段验收；模型控制仿真使用下方独立闭环入口。
 
 抓取采用夹持区域内粒子的辅助绑定，机器人为运动学控制。专家与动作接口共用抓取规则。需要批量数据前，应先验证重复成功率，再加入初态变化。
 
@@ -85,3 +104,21 @@ $HOME/miniforge3/envs/dexonomy-isaac/bin/python -m pip install pyarrow==19.0.1 -
 ```
 
 `learning/scripts/` 是13课的Shell入口，`learning/python/` 是教学实现与共享模块。旧的根目录 `learn_*.sh` 已移动，请使用新路径。教学图表、页面和模型仍写入采集目录旁的 `learning_*` 输出目录，依赖仍在 `.runtime/`。
+
+## 标准ACT第一阶段
+
+运行 `./run_act_stage1.sh`，依次完成独立环境检查、官方数据加载、标准ACT短程训练、保存及重载推理验收。默认只使用当前单条固定工况示范，尚不控制仿真。详细命令、版本、数据副本与输出说明见 [ACT第一阶段](training/act/README.md)。
+
+第一阶段已实测通过：标准ACT约5158万参数，200次更新后固定训练片段z=0 L1从1.0197降至0.2552，模型和处理器重载预测一致；尚不代表仿真任务成功。详细设备与检查结果见 [验收记录](training/act/VALIDATION.md)。
+
+## ACT独立控制实时仿真
+
+```bash
+./run_act_live.sh
+```
+
+优先加载 `training/act/deployment.json` 中经过闭环验收的模型和执行参数，并校验权重哈希；没有部署记录时才选择最近一次第一阶段验收通过的模型。默认每次执行30步预测动作，再用当前RGB和实际关节状态重新预测。打开Isaac窗口后专家关闭，窗口可暂停、查看三路相机和退出；运行结束保留窗口。物理与渲染同步，实际运行可能慢于仿真时钟。指定 `--checkpoint` 可测试其他权重，`--action-steps` 和 `--duration` 可显式覆盖执行参数。
+
+结果保存到 `outputs/act_rollout/<本次运行>/`，查看 `evaluation.json` 的 `task_success` 判断是否完成对折；`result.json` 区分完成、提前退出和异常。任务失败也会保存视频、预测动作与实际状态供诊断。完整用法、控制信号、评价标准和输出格式见 [ACT闭环说明](training/act/ROLLOUT.md)。
+
+本机首次完整评价：900次模型控制、专家调用0次，三路视频各901帧；当前200次更新的权重未完成抓取与对折，平均配对误差165mm。闭环已运行，策略能力尚未通过，详情见 [闭环实测记录](training/act/ROLLOUT_VALIDATION.md)。

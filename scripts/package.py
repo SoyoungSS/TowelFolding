@@ -24,7 +24,7 @@ def files():
             continue
         if path.suffix in {".pem", ".key", ".pyc", ".pyo"} or path.name == "imgui.ini":
             continue
-        if relative.parts[0] in {"simulation", "dual_arm", "teleop", "scripts", "tests", "environments", "docs", "learning"} or path.name in {"README.md", "Makefile", "THIRD_PARTY_NOTICES.md", ".gitignore", "run_collect.sh"}:
+        if relative.parts[0] in {"simulation", "dual_arm", "teleop", "scripts", "tests", "environments", "docs", "learning", "training"} or path.name in {"README.md", "Makefile", "THIRD_PARTY_NOTICES.md", ".gitignore", "run_collect.sh", "run_act_stage1.sh", "run_act_predict.sh", "run_act_live.sh"}:
             yield path
 
 

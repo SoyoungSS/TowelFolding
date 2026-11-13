@@ -46,6 +46,17 @@ class Collector:
         for w in self.writers.values():
             w.release()
 
+    @classmethod
+    def from_written_episode(cls, root, fps):
+        """Resume metadata generation after the row table and videos were flushed."""
+        collector = cls.__new__(cls)
+        collector.root = Path(root)
+        collector.fps = fps
+        collector.rows = pq.read_table(collector.root / 'data/chunk-000/file-000.parquet').to_pylist()
+        collector.writers = {}
+        collector.finished = False
+        return collector
+
     def finish(self, success):
         self.close()
         if not success:
